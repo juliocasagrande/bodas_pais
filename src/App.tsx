@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
-import { SHEET_ID, SHEET_NAME, HORIZON_MONTHS, TITLE, COLORS } from './config'
+import { SHEET_ID, SHEET_NAME, HORIZON_MONTHS, TITLE } from './config'
 import type { Row } from './finance'
 import { buildSeries, brl, parseNumber } from './finance'
 
