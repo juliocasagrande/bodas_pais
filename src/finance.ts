@@ -16,11 +16,30 @@ export type Point = {
   isProjection: boolean
 }
 
-export function parseNumber(v: any): number {
-  if (v === null || v === undefined) return 0
-  // remove milhar '.' e troca vírgula por ponto
-  const s = String(v).trim().replace(/\./g, '').replace(',', '.').replace(/\s/g, '')
-  const n = Number(s)
+export function parseNumber(v: unknown): number {
+  if (v === null || v === undefined || v === '') return 0
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0
+
+  const raw = String(v).trim().replace(/\s/g, '').replace(/R\$/g, '').replace(/%/g, '')
+  if (!raw) return 0
+  const comma = raw.lastIndexOf(',')
+  const dot = raw.lastIndexOf('.')
+  let normalized: string
+  if (comma >= 0 && dot >= 0) {
+    // O ultimo separador determina a casa decimal (pt-BR ou en-US).
+    normalized = comma > dot
+      ? raw.replace(/\./g, '').replace(',', '.')
+      : raw.replace(/,/g, '')
+  } else if (comma >= 0) {
+    normalized = raw.replace(/\./g, '').replace(',', '.')
+  } else if (dot >= 0) {
+    // Dados numéricos do Sheets chegam com ponto decimal.
+    // Em texto, 1.234.567 é agrupamento de milhares.
+    normalized = /^-?\d{1,3}(\.\d{3})+$/.test(raw) ? raw.replace(/\./g, '') : raw
+  } else {
+    normalized = raw
+  }
+  const n = Number(normalized)
   return Number.isFinite(n) ? n : 0
 }
 
