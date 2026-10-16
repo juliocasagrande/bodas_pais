@@ -145,7 +145,7 @@ async function fetchRows(sheetId: string, sheetName: string): Promise<Row[]>{
 
     rows.push({
       date: obj['date'] ? new Date(obj['date']) : new Date(),
-      saldo: parseNumber(obj['saldo']),
+      saldo: obj['saldo'] === null || obj['saldo'] === undefined || obj['saldo'] === '' ? null : parseNumber(obj['saldo']),
       rendimento_percent: obj['rendimento_percent'],
       aportes
     })
