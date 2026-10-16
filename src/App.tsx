@@ -1,7 +1,7 @@
 /** App.tsx **/
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceArea
+  ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ReferenceArea, PieChart, Pie, Cell
 } from 'recharts'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
@@ -205,115 +205,95 @@ export default function App(){
   // Última atualização "Mês/AAAA" usando o mês real mais recente
   const updatedAt = lastReal?.date ? formatMesAnoBR(dayjs(`${lastReal.date}-01`).toDate()) : '—'
 
+
+  const allocation = [
+    { name: 'Aportes', value: Math.max(0, totals.cumContrib), color: '#2563eb' },
+    { name: 'Rendimentos', value: Math.max(0, totals.cumInterest), color: '#16a34a' },
+  ]
+  const hasAllocation = allocation.some(item => item.value > 0)
+  const yieldPercent = totals.cumContrib > 0 ? totals.cumInterest / totals.cumContrib * 100 : 0
+  const projectedTotal = fixedProjected.at(-1)?.total ?? totals.total
+
   return (
-    <div className="container">
-      {/* Título com Poppins */}
-      <div className="header">
-        <h1 style={{ fontFamily: `'Poppins', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial`, letterSpacing: '.2px' }}>
-          {TITLE}
-        </h1>
-        <div className="subtle">Investimento para comemorarmos o casamento dos nossos pais! 😎💕</div>
-      </div>
+    <main className="container">
+      <header className="header">
+        <div className="eyebrow"><span className="status-dot" /> Planejamento financeiro familiar</div>
+        <h1>{TITLE}</h1>
+        <p className="subtle">Um fundo para celebrarmos juntos o casamento dos nossos pais.</p>
+        <div className="update-line">Dados atualizados até <strong>{updatedAt}</strong></div>
+      </header>
 
-      {/* KPIs */}
-      <div className="row" style={{margin:'12px 0'}}>
-        <div className="kpi" style={{ padding: 0, borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ backgroundColor: 'var(--pastel1)', color: '#202225', fontWeight: 700, padding: '6px 10px', fontSize: '0.85rem' }}>Total acumulado</div>
-          <div style={{ padding: '8px 10px', fontWeight: 800, fontSize: '1.1rem' }}>{brl(totals.total)}</div>
-        </div>
-        <div className="kpi" style={{ padding: 0, borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ backgroundColor: 'var(--pastel3)', color: '#202225', fontWeight: 700, padding: '6px 10px', fontSize: '0.85rem' }}>Acumulado dos aportes</div>
-          <div style={{ padding: '8px 10px', fontWeight: 800, fontSize: '1.1rem' }}>{brl(totals.cumContrib)}</div>
-        </div>
-        <div className="kpi" style={{ padding: 0, borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ backgroundColor: 'var(--pastel4)', color: '#202225', fontWeight: 700, padding: '6px 10px', fontSize: '0.85rem' }}>Acumulado de juros</div>
-          <div style={{ padding: '8px 10px', fontWeight: 800, fontSize: '1.1rem' }}>{brl(totals.cumInterest)}</div>
-        </div>
-      </div>
+      {state === 'loading' && <div role="status" className="notice">Carregando informações da planilha…</div>}
+      {state === 'error' && <div role="alert" className="notice notice-error">Não foi possível carregar os dados. Verifique se a planilha está publicada e tente atualizar a página.</div>}
 
-      {/* Card do gráfico estilo KPI */}
-      <div className="card" style={{ marginTop:12, padding:12 }}>
-        <div style={{
-          background: 'var(--pastel5)',
-          color: '#202225',
-          fontWeight: 800,
-          padding: '6px 10px',
-          borderRadius: 12,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}>
-          <span style={{ fontSize: '.95rem' }}>Evolução do fundo</span>
-          <span style={{ padding: '4px 10px', background: 'rgba(255,255,255,.7)', borderRadius: 999, fontSize: '.8rem', fontWeight: 700 }}>10 anos</span>
-        </div>
+      <section className="summary-grid" aria-label="Resumo do investimento">
+        <article className="metric metric-primary">
+          <span className="metric-label">Patrimônio acumulado</span>
+          <strong className="metric-main">{brl(totals.total)}</strong>
+          <span className="metric-detail">Saldo atual do fundo</span>
+        </article>
+        <article className="metric">
+          <span className="metric-label"><span className="metric-dot dot-blue" /> Total aportado</span>
+          <strong className="metric-value">{brl(totals.cumContrib)}</strong>
+          <span className="metric-detail">Contribuições realizadas</span>
+        </article>
+        <article className="metric">
+          <span className="metric-label"><span className="metric-dot dot-green" /> Rendimentos acumulados</span>
+          <strong className="metric-value">{brl(totals.cumInterest)}</strong>
+          <span className="metric-detail">Rentabilidade sobre aportes: {yieldPercent.toFixed(2).replace('.', ',')}%</span>
+        </article>
+      </section>
 
-        <div className="toolbar" style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
-          <span className="chip" style={{ backgroundColor: 'var(--pastel2)', color:'#202225', borderRadius:999, padding:'6px 10px', fontWeight:600 }}>
-            Última atualização: {updatedAt}
-          </span>
-          <label className="chip" style={{ backgroundColor: 'var(--pastel2)', color:'#202225', borderRadius:999, padding:'6px 10px', fontWeight:600, display:'inline-flex', alignItems:'center', gap:8, cursor:'pointer' }}>
-            <input type="checkbox" checked={showProjection} onChange={()=>setShowProjection(v=>!v)} style={{ width:18, height:18 }} />
-            <span>Exibir projeção de {HORIZON_MONTHS/12} anos (10% a.a.)</span>
+      <section className="dashboard-grid" aria-label="Indicadores e gráficos">
+        <article className="card chart-panel">
+          <div className="section-heading">
+            <div><span className="section-kicker">Desempenho</span><h2>Evolução do fundo</h2><p>Histórico de aportes, rendimentos e patrimônio.</p></div>
+            <span className="pill">{HORIZON_MONTHS / 12} anos</span>
+          </div>
+          <label className="toggle-line">
+            <input type="checkbox" checked={showProjection} onChange={e => setShowProjection(e.target.checked)} />
+            <span>Exibir projeção com taxa nominal de 10% a.a.</span>
           </label>
-        </div>
+          <div className="chart-area" role="img" aria-label="Gráfico de evolução do fundo">
+            {state === 'ok' && chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={chartData} margin={{top: 12, right: 12, bottom: 8, left: 0}} barCategoryGap="28%">
+                  <CartesianGrid stroke="#e9edf3" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={tickMMYYYY} tick={{fontSize: 11, fill: '#64748b'}} tickLine={false} axisLine={false} minTickGap={25} />
+                  <YAxis width={76} tickFormatter={v => new Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(Number(v))} tick={{fontSize: 11, fill: '#64748b'}} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{borderRadius:12,border:'1px solid #e5e7eb',boxShadow:'0 10px 30px #0f172a12'}} formatter={(value, name) => [brl(Number(value)), String(name)]} labelFormatter={value => 'Mês: ' + tickMMYYYY(String(value))} />
+                  <Legend wrapperStyle={{fontSize:12,paddingTop:12}} />
+                  {firstProjectionIndex > 0 && <ReferenceArea x1={chartData[firstProjectionIndex].date} x2={chartData[chartData.length-1].date} fill="#e0e7ff" fillOpacity={0.5} />}
+                  <Bar dataKey="monthInterest" name="Juros mensais" fill="#86b9a2" radius={[3,3,0,0]} maxBarSize={18} />
+                  <Line type="monotone" dataKey="cumContrib" name="Aportes acumulados" stroke="#2563eb" strokeWidth={2.2} dot={false} />
+                  <Line type="monotone" dataKey="cumInterest" name="Rendimentos acumulados" stroke="#16a34a" strokeWidth={2.2} dot={false} />
+                  <Line type="monotone" dataKey="total" name="Patrimônio" stroke="#111827" strokeWidth={3} dot={false} activeDot={{r:5}} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : <div className="chart-empty">{state === 'ok' ? 'Nenhum dado disponível.' : 'Aguardando dados…'}</div>}
+          </div>
+          <p className="chart-note">A região sombreada representa valores projetados, não realizados.</p>
+        </article>
 
-        <div style={{width:'100%', height:400}}>
-          {state==='loading' && <div className="subtle">Carregando dados…</div>}
-          {state==='error' && <div className="subtle">Não foi possível ler a planilha. Verifique se está publicada.</div>}
-          {state==='ok' && (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart
-                data={chartData as any}
-                margin={{ top: 16, right: 32, bottom: 12, left: 12 }}
-                barCategoryGap="24%"
-                barGap={4}
-              >
-                <CartesianGrid stroke="#eef2f7" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12 }}
-                  padding={{ left: 28, right: 28 }}
-                  tickFormatter={tickMMYYYY}   // MM/AAAA correto
-                />
-                <YAxis
-                  tickFormatter={v=>brl(v).replace('R$','R$ ')}
-                  tick={{ fontSize: 12 }}
-                />
-                <Tooltip
-                  formatter={(v:any, name:any)=>{
-                    const map: Record<string,string> = {
-                      monthContrib:'Aporte do mês',
-                      monthInterest:'Juros do mês',
-                      cumContrib:'Ac. Aportado',
-                      cumInterest:'Ac. Juros',
-                      total:'Total'
-                    }
-                    return [brl(v as number), map[name] || name]
-                  }}
-                  labelFormatter={(l)=>`Mês: ${tickMMYYYY(String(l))}`}
-                />
-                <Legend />
-                {firstProjectionIndex>0 && (
-                  <ReferenceArea
-                    x1={(chartData as any)[firstProjectionIndex].date}
-                    x2={(chartData as any).at(-1)!.date}
-                    fill={COLORS.projection}
-                    fillOpacity={0.12}
-                  />
-                )}
-                <Bar dataKey="monthInterest" name="Juros do mês" fill={COLORS.barInterest} />
-                <Line type="monotone" dataKey="cumContrib" name="Ac. Aportado" stroke={COLORS.lineCumContrib} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="cumInterest" name="Ac. Juros" stroke={COLORS.lineCumInterest} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="total" name="Total" stroke={COLORS.lineTotal} strokeWidth={3} dot={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        <div className="footer">
-          <div><strong>Como calculamos:</strong> os meses reais seguem a regra do saldo/rendimento. A <em>projeção</em> foi recalculada aqui com taxa fixa de <strong>10% ao ano</strong> (≈ 0,833% a.m.) e com <em>aporte médio</em> dos meses reais.</div>
-        </div>
-      </div>
-    </div>
+        <article className="card allocation-panel">
+          <div className="section-heading"><div><span className="section-kicker">Composição</span><h2>De onde vem o saldo?</h2><p>Participação dos aportes e dos rendimentos.</p></div></div>
+          <div className="donut-area">
+            {hasAllocation ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart><Pie data={allocation} dataKey="value" nameKey="name" innerRadius="67%" outerRadius="88%" paddingAngle={2} stroke="none">
+                  {allocation.map(item => <Cell key={item.name} fill={item.color} />)}
+                </Pie><Tooltip formatter={value => brl(Number(value))} /></PieChart>
+              </ResponsiveContainer>
+            ) : <div className="chart-empty">Sem valores disponíveis</div>}
+            {hasAllocation && <div className="donut-center"><span>Saldo total</span><strong>{brl(totals.total)}</strong></div>}
+          </div>
+          <div className="allocation-legend">
+            {allocation.map(item => <div className="legend-row" key={item.name}><span><i style={{background:item.color}} />{item.name}</span><strong>{brl(item.value)}</strong></div>)}
+          </div>
+          <div className="projection-tile"><span>Saldo ao final da projeção</span><strong>{brl(projectedTotal)}</strong><small>{HORIZON_MONTHS / 12} anos · cenário ilustrativo de 10% a.a.</small></div>
+        </article>
+      </section>
+      <footer className="method"><strong>Metodologia:</strong> o histórico é calculado a partir dos saldos e aportes da planilha. A projeção usa taxa nominal fixa de 10% a.a. dividida em 12 meses e o aporte médio histórico. Não é uma garantia de retorno.</footer>
+    </main>
   )
 }
