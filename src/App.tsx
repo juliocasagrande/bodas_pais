@@ -5,7 +5,7 @@ import {
 } from 'recharts'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
-import { SHEET_ID, SHEET_NAME, HORIZON_MONTHS, TITLE } from './config'
+import { SHEET_ID, SHEET_NAME, HORIZON_MONTHS, TITLE, VERIFIED_BALANCE } from './config'
 import type { Row } from './finance'
 import { buildSeries, brl, parseNumber } from './finance'
 
@@ -220,7 +220,7 @@ export default function App(){
         <div className="eyebrow"><span className="status-dot" /> Planejamento financeiro familiar</div>
         <h1>{TITLE}</h1>
         <p className="subtle">Um fundo para celebrarmos juntos o casamento dos nossos pais.</p>
-        <div className="update-line">Dados atualizados até <strong>{updatedAt}</strong></div>
+        <div className="update-line">Histórico da planilha até <strong>{updatedAt}</strong> · Saldo conferido em <strong>{VERIFIED_BALANCE.asOf}</strong></div>
       </header>
 
       {state === 'loading' && <div role="status" className="notice">Carregando informações da planilha…</div>}
@@ -229,25 +229,25 @@ export default function App(){
       <section className="summary-grid" aria-label="Resumo do investimento">
         <article className="metric metric-primary">
           <span className="metric-label">Patrimônio acumulado</span>
-          <strong className="metric-main">{brl(totals.total)}</strong>
-          <span className="metric-detail">Saldo atual do fundo</span>
+          <strong className="metric-main">{brl(VERIFIED_BALANCE.amount)}</strong>
+          <span className="metric-detail">Saldo conferido no Nubank em {VERIFIED_BALANCE.asOf} · Variação em 12 meses: +{brl(VERIFIED_BALANCE.trailing12MonthChange)}</span>
         </article>
         <article className="metric">
           <span className="metric-label"><span className="metric-dot dot-blue" /> Total aportado</span>
           <strong className="metric-value">{brl(totals.cumContrib)}</strong>
-          <span className="metric-detail">Contribuições realizadas</span>
+          <span className="metric-detail">Contribuições registradas na planilha até {updatedAt}</span>
         </article>
         <article className="metric">
           <span className="metric-label"><span className="metric-dot dot-green" /> Rendimentos acumulados</span>
           <strong className="metric-value">{brl(totals.cumInterest)}</strong>
-          <span className="metric-detail">Rentabilidade sobre aportes: {yieldPercent.toFixed(2).replace('.', ',')}%</span>
+          <span className="metric-detail">Histórico da planilha · Rentabilidade sobre aportes: {yieldPercent.toFixed(2).replace('.', ',')}%</span>
         </article>
       </section>
 
       <section className="dashboard-grid" aria-label="Indicadores e gráficos">
         <article className="card chart-panel">
           <div className="section-heading">
-            <div><span className="section-kicker">Desempenho</span><h2>Evolução do fundo</h2><p>Histórico de aportes, rendimentos e patrimônio.</p></div>
+            <div><span className="section-kicker">Desempenho</span><h2>Evolução do fundo</h2><p>Histórico calculado com base na planilha, que pode estar defasada em relação ao saldo conferido.</p></div>
             <span className="pill">{HORIZON_MONTHS / 12} anos</span>
           </div>
           <label className="toggle-line">
@@ -276,7 +276,7 @@ export default function App(){
         </article>
 
         <article className="card allocation-panel">
-          <div className="section-heading"><div><span className="section-kicker">Composição</span><h2>De onde vem o saldo?</h2><p>Participação dos aportes e dos rendimentos.</p></div></div>
+          <div className="section-heading"><div><span className="section-kicker">Composição</span><h2>De onde vem o saldo?</h2><p>Participação dos aportes e rendimentos registrados na planilha.</p></div></div>
           <div className="donut-area">
             {hasAllocation ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -285,15 +285,15 @@ export default function App(){
                 </Pie><Tooltip formatter={value => brl(Number(value))} /></PieChart>
               </ResponsiveContainer>
             ) : <div className="chart-empty">Sem valores disponíveis</div>}
-            {hasAllocation && <div className="donut-center"><span>Saldo total</span><strong>{brl(totals.total)}</strong></div>}
+            {hasAllocation && <div className="donut-center"><span>Saldo da planilha</span><strong>{brl(totals.total)}</strong></div>}
           </div>
           <div className="allocation-legend">
             {allocation.map(item => <div className="legend-row" key={item.name}><span><i style={{background:item.color}} />{item.name}</span><strong>{brl(item.value)}</strong></div>)}
           </div>
-          <div className="projection-tile"><span>Saldo ao final da projeção</span><strong>{brl(projectedTotal)}</strong><small>{HORIZON_MONTHS / 12} anos · cenário ilustrativo de 10% a.a.</small></div>
+          <div className="projection-tile"><span>Saldo projetado com base na planilha</span><strong>{brl(projectedTotal)}</strong><small>{HORIZON_MONTHS / 12} anos · cenário ilustrativo de 10% a.a.</small></div>
         </article>
       </section>
-      <footer className="method"><strong>Metodologia:</strong> o histórico é calculado a partir dos saldos e aportes da planilha. A projeção usa taxa nominal fixa de 10% a.a. dividida em 12 meses e o aporte médio histórico. Não é uma garantia de retorno.</footer>
+      <footer className="method"><strong>Metodologia:</strong> o patrimônio atual é uma conferência pontual do Nubank em 16/11/2026. A variação de 12 meses não é tratada como rendimento acumulado. Os aportes, rendimentos, gráficos e a projeção são calculados a partir dos dados da planilha, que podem não coincidir com o saldo conferido. A projeção usa taxa nominal fixa de 10% a.a. dividida em 12 meses e o aporte médio histórico. Não é uma garantia de retorno.</footer>
     </main>
   )
 }
