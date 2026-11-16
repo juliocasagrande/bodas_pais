@@ -13,3 +13,11 @@ export const COLORS = {
   lineTotal: '#C6C5F0',
   projection: '#F9E2AE'
 };
+
+// Conferência manual do saldo total informado pelo Nubank (captura de 16/11/2026).
+// Não representa aporte ou rendimento acumulado; esses continuam vindo da planilha.
+export const VERIFIED_BALANCE = {
+  amount: 15816.68,
+  asOf: '16/11/2026',
+  trailing12MonthChange: 1164.80,
+} as const;
